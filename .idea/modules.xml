@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/spring-boot-keycloak/spring-boot-keycloak.iml" filepath="$PROJECT_DIR$/spring-boot-keycloak/spring-boot-keycloak.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sso-authorization-server/sso-authorization-server.iml" filepath="$PROJECT_DIR$/sso-authorization-server/sso-authorization-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/sso-keycloak.iml" filepath="$PROJECT_DIR$/.idea/sso-keycloak.iml" />
+    </modules>
+  </component>
+</project>
