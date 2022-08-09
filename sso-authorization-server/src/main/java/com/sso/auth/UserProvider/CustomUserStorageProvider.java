@@ -7,11 +7,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialInput;
@@ -21,6 +18,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
@@ -32,6 +30,22 @@ public class CustomUserStorageProvider implements UserStorageProvider,
         UserLookupProvider,
         CredentialInputValidator,
         UserQueryProvider {
+
+
+
+    public  List<CustomUser> getListUser(RealmModel realm) {
+        List<CustomUser> listUser = new ArrayList<CustomUser>();
+        List<String> roles = new ArrayList<>();
+        roles.add("user");
+        roles.add("admin");
+//        CustomUser newUser = new CustomUser(ksession, realm, model,"admin", "123","fad","dasda",new Date(),roles);
+//        newUser.grantRole(KeycloakModelUtils.getRoleFromString(realm, "admin"));
+        listUser.add(new CustomUser(ksession, realm, model,"admin", "123","fad","dasda",new Date(),roles));
+        listUser.add(new CustomUser(ksession, realm, model,"user1", "fdsf","fad","dasda",new Date(),roles));
+        listUser.add(new CustomUser(ksession, realm, model,"user2", "gf","fad","dasda",new Date(),roles));
+        listUser.add(new CustomUser(ksession, realm, model,"user3", "ga","fad","dasda",new Date(),roles));
+        return listUser;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(CustomUserStorageProvider.class);
     private KeycloakSession ksession;
@@ -57,21 +71,34 @@ public class CustomUserStorageProvider implements UserStorageProvider,
     @Override
     public UserModel getUserByUsername(String username, RealmModel realm) {
         log.info("[I41] getUserByUsername({})",username);
-        try ( Connection c = DbUtil.getConnection(this.model)) {
-            PreparedStatement st = c.prepareStatement("select username, firstName,lastName, email, birthDate from users where username = ?");
-            st.setString(1, username);
-            st.execute();
-            ResultSet rs = st.getResultSet();
-            if ( rs.next()) {
-                return mapUser(realm,rs);
+//        try ( Connection c = DbUtil.getConnection(this.model)) {
+//            PreparedStatement st = c.prepareStatement("select username, firstName,lastName, email, birthDate from users where username = ?");
+//            st.setString(1, username);
+//            st.execute();
+//            ResultSet rs = st.getResultSet();
+//            if ( rs.next()) {
+//                return mapUser(realm,rs);
+//            }
+//            else {
+//                return null;
+//            }
+//        }
+//        catch(SQLException ex) {
+//            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
+//        }
+        AtomicReference<CustomUser> result = new AtomicReference<>();
+        getListUser(realm).forEach((user) -> {
+            if (user.getUsername().equals(username)) {
+                result.set(user);
             }
-            else {
-                return null;
-            }
+        });
+
+        CustomUser resultUser= result.get();
+        for (String role: resultUser.getRoles()) {
+        if (!resultUser.hasRole(KeycloakModelUtils.getRoleFromString(realm, role)))
+            resultUser.grantRole(KeycloakModelUtils.getRoleFromString(realm, role));
         }
-        catch(SQLException ex) {
-            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
-        }
+        return resultUser;
     }
 
     @Override
@@ -117,22 +144,23 @@ public class CustomUserStorageProvider implements UserStorageProvider,
         StorageId sid = new StorageId(user.getId());
         String username = sid.getExternalId();
 
-        try ( Connection c = DbUtil.getConnection(this.model)) {
-            PreparedStatement st = c.prepareStatement("select password from users where username = ?");
-            st.setString(1, username);
-            st.execute();
-            ResultSet rs = st.getResultSet();
-            if ( rs.next()) {
-                String pwd = rs.getString(1);
-                return pwd.equals(credentialInput.getChallengeResponse());
-            }
-            else {
-                return false;
-            }
-        }
-        catch(SQLException ex) {
-            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
-        }
+//        try ( Connection c = DbUtil.getConnection(this.model)) {
+//            PreparedStatement st = c.prepareStatement("select password from users where username = ?");
+//            st.setString(1, username);
+//            st.execute();
+//            ResultSet rs = st.getResultSet();
+//            if ( rs.next()) {
+//                String pwd = rs.getString(1);
+//                return pwd.equals(credentialInput.getChallengeResponse());
+//            }
+//            else {
+//                return false;
+//            }
+//        }
+//        catch(SQLException ex) {
+//            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
+//        }
+        return true;
     }
 
     // UserQueryProvider implementation
@@ -140,16 +168,17 @@ public class CustomUserStorageProvider implements UserStorageProvider,
     @Override
     public int getUsersCount(RealmModel realm) {
         log.info("[I93] getUsersCount: realm={}", realm.getName() );
-        try ( Connection c = DbUtil.getConnection(this.model)) {
-            Statement st = c.createStatement();
-            st.execute("select count(*) from users");
-            ResultSet rs = st.getResultSet();
-            rs.next();
-            return rs.getInt(1);
-        }
-        catch(SQLException ex) {
-            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
-        }
+//        try ( Connection c = DbUtil.getConnection(this.model)) {
+//            Statement st = c.createStatement();
+//            st.execute("select count(*) from users");
+//            ResultSet rs = st.getResultSet();
+//            rs.next();
+//            return rs.getInt(1);
+//        }
+//        catch(SQLException ex) {
+//            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
+//        }
+        return 4;
     }
 
     @Override
@@ -161,21 +190,24 @@ public class CustomUserStorageProvider implements UserStorageProvider,
     public List<UserModel> getUsers(RealmModel realm, int firstResult, int maxResults) {
         log.info("[I113] getUsers: realm={}", realm.getName());
 
-        try ( Connection c = DbUtil.getConnection(this.model)) {
-            PreparedStatement st = c.prepareStatement("select username, firstName,lastName, email, birthDate from users order by username limit ? offset ?");
-            st.setInt(1, maxResults);
-            st.setInt(2, firstResult);
-            st.execute();
-            ResultSet rs = st.getResultSet();
-            List<UserModel> users = new ArrayList<>();
-            while(rs.next()) {
-                users.add(mapUser(realm,rs));
-            }
-            return users;
-        }
-        catch(SQLException ex) {
-            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
-        }
+//        try ( Connection c = DbUtil.getConnection(this.model)) {
+//            PreparedStatement st = c.prepareStatement("select username, firstName,lastName, email, birthDate from users order by username limit ? offset ?");
+//            st.setInt(1, maxResults);
+//            st.setInt(2, firstResult);
+//            st.execute();
+//            ResultSet rs = st.getResultSet();
+//            List<UserModel> users = new ArrayList<>();
+//            while(rs.next()) {
+//                users.add(mapUser(realm,rs));
+//            }
+//            return users;
+//        }
+//        catch(SQLException ex) {
+//            throw new RuntimeException("Database error:" + ex.getMessage(),ex);
+//        }
+        List<UserModel> result = new ArrayList<>();
+        getListUser(realm).forEach((user)->result.add(user));
+        return result;
     }
 
     @Override

@@ -9,36 +9,52 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.storage.adapter.AbstractUserAdapter;
+import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
 
 
-class CustomUser extends AbstractUserAdapter {
+class CustomUser extends AbstractUserAdapterFederatedStorage {
 
-    private final String username;
+    private String username;
     private final String email;
     private final String firstName;
     private final String lastName;
+
+
     private final Date birthDate;
 
-    private CustomUser(KeycloakSession session, RealmModel realm,
-                       ComponentModel storageProviderModel,
-                       String username,
-                       String email,
-                       String firstName,
-                       String lastName,
-                       Date birthDate ) {
+    private final List<String> roles;
+
+    CustomUser(KeycloakSession session, RealmModel realm,
+               ComponentModel storageProviderModel,
+               String username,
+               String email,
+               String firstName,
+               String lastName,
+               Date birthDate, List<String> roles) {
         super(session, realm, storageProviderModel);
         this.username = username;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.birthDate = birthDate;
+        this.roles=roles;
+//        for (String role: this.getRoles()) {
+//            if (!this.hasRole(KeycloakModelUtils.getRoleFromString(realm, role)))
+//                this.grantRole(KeycloakModelUtils.getRoleFromString(realm, role));
+//        }
 
     }
 
     @Override
     public String getUsername() {
         return username;
+    }
+
+    @Override
+    public void setUsername(String s) {
+        this.username = s;
     }
 
     @Override
@@ -58,6 +74,10 @@ class CustomUser extends AbstractUserAdapter {
 
     public Date getBirthDate() {
         return birthDate;
+    }
+
+    public List<String> getRoles() {
+        return roles;
     }
 
     @Override
@@ -80,6 +100,7 @@ class CustomUser extends AbstractUserAdapter {
         private String firstName;
         private String lastName;
         private Date birthDate;
+        private List<String> roles;
 
         Builder(KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel,String username) {
             this.session = session;
@@ -117,7 +138,7 @@ class CustomUser extends AbstractUserAdapter {
                     email,
                     firstName,
                     lastName,
-                    birthDate);
+                    birthDate,roles);
 
         }
     }
